@@ -24,7 +24,8 @@ while True:
             "3) Pesquisar carro por placa\n"
             "4) Atualizar um carro\n"
             "5) Remover um carro\n"
-            "6) Informar a quantidade de carros disponíveis"
+            "6) Informar a quantidade de carros disponíveis\n"
+            "7) Retornar ao menu principal\n"
             )
         #Usuário digita a opção
         subopcao = subOpcaoUser()
@@ -43,7 +44,7 @@ while True:
                 print("Não há carros cadastrados.\n")
 
         #Cadastrar novo carro -- Campos obrigatórios: modelo / fabricante / ano / placa / preço da diária
-        if subopcao == 2:
+        elif subopcao == 2:
 
              #User informa fabricante
             while True:
@@ -104,7 +105,8 @@ while True:
                   f"Valor da diária: R${novoPreco}"                  
                   )
 
-        if subopcao == 3:
+        #Buscar carro por placa:
+        elif subopcao == 3:
             while True:
                 try:
                     userPlacaInformada = input("Informe a placa a ser buscada (ou digite 0 para retornar ao menu): ").strip().replace("-","").upper()
@@ -129,7 +131,55 @@ while True:
                 except Exception as e:
                     print(f"Erro ao buscar placa: {e}")
 
+        #Atualizar um carro:
+        elif subopcao == 4:
+            try:
+                #Solicita a placa do carro a ser atualizado:
+                consultaPlaca = input("Informe a placa do carro a ser atualizado: ").strip().upper().replace("-","")
+                
+                #Solicita a nova placa:
+                placaAtualizada = input("Informe a placa atualizada: ").strip().upper().replace("-","")
+
+                #Solicita novo status:
+                while True:
+                    statusAtualizado = input("Informe o status do carro (disponível ou indisponível): ").strip().lower()
+                    if statusAtualizado in ["disponível", "indisponível"]:
+                        break
+                    else:
+                        print("Status informado é inválido! Use 'disponível' ou 'indisponível'.")
+                    
+                #Solicita novo valor da diária:
+                while True:
+                    try:
+                        precoAtualizado = input("Informe o valor da diária atualizado: R$").replace(",",".")
+                        precoAtualizado = float(precoAtualizado)
+                        break
+                    except ValueError:
+                        print("Valor informado é inválido!")
+
+                #Update no BD:
+                consultaAtualizacao = "UPDATE carros SET placa = %s, status = %s, preco_diaria = %s WHERE placa = %s"
+                dados = [placaAtualizada, statusAtualizado, precoAtualizado, consultaPlaca]
+
+                resultado = atualizarBancoDados(conn, consultaAtualizacao, dados)
+
+                if resultado:
+                    print("Carro atualizado com sucesso!")
+                else:
+                    print("Erro ao atualizar o carro. Verifique se a placa informada existe e tente novamente!")
+            except Exception as e:
+                print(f"Ocorreu um erro ao atualizar o carro: {e}")
+                    
+        elif subopcao == 7:
+            print("Retornando ao menu principal...")
+            break
+        else:
+            print("Opção inválida! Tente novamente.")
+    
     if opcao == 4:
         break
+
+
+
 
     encerrarConexao(conn)
