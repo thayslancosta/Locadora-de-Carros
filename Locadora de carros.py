@@ -32,16 +32,16 @@ while True:
         
         #Listagem de carros cadastrados
         if subopcao == 1:
-            consultaListaCarros = "SELECT modelo FROM carros "
+            consultaListaCarros = "SELECT * FROM carros"
             listaCarros = listarBancoDados(conn,consultaListaCarros)
 
-            if len(listaCarros  ) > 0:
-                print("Lista de Filmes:")
-                
-            for item in listaCarros :
-                print(f"- {item[1]} ({item[3]})")
+            if len(listaCarros) > 0:
+                print("Lista de carros:")  
+                for item in listaCarros :
+                    print(f"- {item[2]} {item[1]}")
             else:
                 print("Não há carros cadastrados.\n")
+                continue
 
         #Cadastrar novo carro -- Campos obrigatórios: modelo / fabricante / ano / placa / preço da diária
         elif subopcao == 2:
@@ -73,12 +73,20 @@ while True:
             #User informa placa
             while True:
                 novaPlaca = input("Digite a placa do carro a ser adicionado: ")
-                novaPlaca.strip().upper().replace("-","")
+                novaPlaca = novaPlaca.strip().upper().replace("-","")
                 
                 if len(novaPlaca) == 0:
                     print("Placa informada é inválida!")
                 else:
                     break
+            
+            #Verificar se placa já está cadastrada:
+            consultaPlacaIgual = "SELECT COUNT(*) FROM carros WHERE placa = %s"
+            dados = [novaPlaca]
+            resultado = listarBancoDados (conn,consultaPlacaIgual, dados)
+            if resultado [0][0] > 0:
+                print("Erro! Já existe um carro cadastrado para essa placa!")
+                continue
 
             #User informa o preço da diária do carro
             while True:
@@ -92,18 +100,17 @@ while True:
             #Inserir novo carro no banco de dados:
             consultaInsert = "INSERT INTO carros (modelo, fabricante, ano, placa, preco_diaria) values (%s, %s, %s, %s, %s)"
             dados = [novoModelo, novoFabricante, novoAno, novaPlaca, novoPreco]
-
-            #informar id do carro
-            idCarro = insertNoBancoDados(conn, consultaInsert, dados)
+            insertNoBancoDados(conn, consultaInsert, dados)
 
             #Feedback para o user:
-            print(f"Carro cadastrado com sucesso! O código de cadastro é {idCarro}\n"
+            print(f"Carro cadastrado com sucesso!\n"
                   f"Modelo: {novoModelo}\n"
                   f"Fabricante: {novoFabricante}\n"
                   f"Ano: {novoAno}\n"
-                  f"Placa: {novaPlaca}"
-                  f"Valor da diária: R${novoPreco}"                  
+                  f"Placa: {novaPlaca}\n"
+                  f"Valor da diária: R${novoPreco}\n"                  
                   )
+            continue
 
         #Buscar carro por placa:
         elif subopcao == 3:
@@ -130,6 +137,7 @@ while True:
                 
                 except Exception as e:
                     print(f"Erro ao buscar placa: {e}")
+            continue
 
         #Atualizar um carro:
         elif subopcao == 4:
@@ -169,16 +177,73 @@ while True:
                     print("Erro ao atualizar o carro. Verifique se a placa informada existe e tente novamente!")
             except Exception as e:
                 print(f"Ocorreu um erro ao atualizar o carro: {e}")
-                    
+            
+            continue
+
+        #Remover um carro:
+        elif subopcao == 5:
+            #Receber placa e verificar se o carro está no BD
+            while True:
+                placaDelete = input("Digite a placa do carro a ser excluído: ").upper().strip().replace("-","")
+                
+                operacaoVerificarCarro = "SELECT * FROM carros WHERE placa = %s"
+                carroExiste = listarBancoDados(conn, operacaoVerificarCarro, [placaDelete])
+
+                if carroExiste:
+                    #Confirmar operação com o user
+                    confirmacao = input(f"Tem certeza que deseja excluir o carro de placa {placaDelete}? \n"
+                                        "Sim (digite: s)\n"
+                                        "Não (digite: n)\n")
+                    confirmacao = confirmacao.lower().strip()
+                    if confirmacao == "s":
+                        break
+                    else:
+                        print("Operação cancelada. Escolha outra placa.")
+                        continuar = input("Deseja retornar ao menu principal?\n"
+                                        "Sim (digite: s)\n"
+                                        "Não (digite: n)\n")
+                        continuar = continuar.lower().strip()
+                        if continuar == "s":
+                            break
+                        else:
+                            continue       
+                else:
+                    print("Carro não encontrado. Verifique a placa novamente.")
+                    continuar = input("Deseja retornar ao menu principal?\n"
+                                    "Sim (digite: s)\n"
+                                    "Não (digite: n)\n")
+                    continuar = continuar.lower().strip()
+                    if continuar == "s":
+                        break
+            #Remover carro do BD
+            operacaoDelete = "DELETE FROM carros WHERE placa = %s"
+            dados = [placaDelete]
+            linhasAlteradas = excluirBancoDados(conn, operacaoDelete, dados)
+
+            #Feedback para o user
+            if linhasAlteradas == 0:
+                print("Erro! Tente novamente.")
+            else:
+                print("Carro excluído com sucesso!")
+                continue            
+        
+        #Informar a quantidade de carros registrados:
+        elif subopcao == 6:
+            consultaQuantidadeCarros = "SELECT COUNT(*) FROM carros WHERE status = 'disponível'"
+            quantidadeCarros = listarBancoDados(conn,consultaQuantidadeCarros)
+            print(f"(Há {quantidadeCarros[0][0]} carros disponíveis)")
+            continue
+        
+        #Retornar ao menu principal
         elif subopcao == 7:
             print("Retornando ao menu principal...")
-            break
+            continue
         else:
             print("Opção inválida! Tente novamente.")
     
     if opcao == 4:
+        encerrarConexao(conn)
         break
-
 
 
 
